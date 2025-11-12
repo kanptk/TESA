@@ -6,10 +6,8 @@ import { useRouter } from "next/navigation";
 
 type LatLng = { lat: number; lng: number };
 
-// Use relative path based on your folder layout
 const DroneMap = dynamic(() => import("../../components/DroneMap"), { ssr: false });
 
-// ✅ fixed start coordinates
 const START: LatLng = { lat: 14.297567, lng: 101.166279 };
 
 export default function OffencePage() {
@@ -18,24 +16,21 @@ export default function OffencePage() {
   const [running, setRunning] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Call this with real drone fixes when you hook up your feed
   const pushPoint = useCallback((lat: number, lng: number) => {
-    setPath(prev => [...prev, { lat, lng }]);
+    setPath((prev) => [...prev, { lat, lng }]);
   }, []);
 
-  // Simple simulator so you can see the tracking line
   useEffect(() => {
     if (!running) return;
 
     if (path.length === 0) setPath([START]);
 
     timerRef.current = setInterval(() => {
-      setPath(prev => {
+      setPath((prev) => {
         const last = prev[prev.length - 1] ?? START;
-        const stepLat = (Math.random() * 0.0009) + 0.0002;
-        const stepLng = (Math.random() * 0.0009) + 0.0002;
-        const next = { lat: last.lat + stepLat, lng: last.lng + stepLng };
-        return [...prev, next];
+        const stepLat = Math.random() * 0.0009 + 0.0002;
+        const stepLng = Math.random() * 0.0009 + 0.0002;
+        return [...prev, { lat: last.lat + stepLat, lng: last.lng + stepLng }];
       });
     }, 1000);
 
@@ -58,78 +53,140 @@ export default function OffencePage() {
     setPath([]);
   };
 
+  const logout = () => {
+    localStorage.removeItem("loggedIn");
+    router.replace("/");
+  };
+
+  const topBtnStyle: React.CSSProperties = {
+    padding: "10px 16px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.1)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)",
+    color: "white",
+    fontWeight: 700,
+    cursor: "pointer",
+  };
+
   return (
-    <div style={{ padding: 16, display: "grid", gap: 12 }}>
-      {/* Back button */}
-      <button
-        onClick={() => router.back()} // or router.push("/menu")
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#0b1220",
+        color: "white",
+      }}
+    >
+      {/* Top bar: title left, buttons right */}
+      <div
         style={{
-          width: "fit-content",
-          padding: "8px 12px",
-          borderRadius: 10,
-          border: "1px solid #1f2937",
-          background: "#111827",
-          color: "white",
-          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "24px 28px",
         }}
       >
-        ← Back
-      </button>
-
-      <h1 style={{ fontSize: 24, fontWeight: 700 }}>Offence — Drone Map Tracking</h1>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button
-          onClick={onStart}
-          disabled={running}
+        <h1
           style={{
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "1px solid #1f2937",
-            background: running ? "#9ca3af" : "#111827",
-            color: "white",
-            cursor: running ? "not-allowed" : "pointer",
+            fontSize: 42,
+            fontWeight: 800,
+            margin: 0,
+            textShadow: "0 2px 8px rgba(0,0,0,0.35)",
           }}
         >
-          Start
-        </button>
+          Offence
+        </h1>
 
-        <button
-          onClick={onStop}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "1px solid #1f2937",
-            background: "#374151",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          Stop
-        </button>
-
-        <button
-          onClick={onReset}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 10,
-            border: "1px solid #1f2937",
-            background: "#ef4444",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          Reset
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <button
+            onClick={() => router.push("/menu")}
+            style={topBtnStyle}
+          >
+            Back to Menu
+          </button>
+          <button onClick={logout} style={topBtnStyle}>
+            Log out
+          </button>
+        </div>
       </div>
 
-      {/* Map uses your start center by default; still passed explicitly */}
-      <DroneMap path={path} height={520} followLatest initialCenter={START} />
+      {/* Controls row */}
+      <div style={{ padding: "0 28px 18px 28px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Start = GREEN */}
+          <button
+            onClick={onStart}
+            disabled={running}
+            style={{
+              padding: "10px 18px",
+              borderRadius: 14,
+              border: "1px solid rgba(34,197,94,0.35)",
+              background: running
+                ? "rgba(34,197,94,0.55)"
+                : "linear-gradient(180deg, #22c55e 0%, #16a34a 100%)",
+              color: "white",
+              fontWeight: 800,
+              opacity: running ? 0.85 : 1,
+              cursor: running ? "not-allowed" : "pointer",
+            }}
+          >
+            Start
+          </button>
 
-      <div style={{ fontSize: 14, color: "#6b7280" }}>
-        <p>
-          When connected to your drone, call <code>pushPoint(lat, lng)</code> for each new GPS fix.
-        </p>
+          {/* Stop = RED */}
+          <button
+            onClick={onStop}
+            style={{
+              padding: "10px 18px",
+              borderRadius: 14,
+              border: "1px solid rgba(239,68,68,0.35)",
+              background: "linear-gradient(180deg, #ef4444 0%, #b91c1c 100%)",
+              color: "white",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            Stop
+          </button>
+
+          {/* Reset = GRAY */}
+          <button
+            onClick={onReset}
+            style={{
+              padding: "10px 18px",
+              borderRadius: 14,
+              border: "1px solid rgba(156,163,175,0.35)",
+              background: "linear-gradient(180deg, #9ca3af 0%, #6b7280 100%)",
+              color: "white",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Map card */}
+      <div style={{ padding: "0 28px 40px 28px" }}>
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.08)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
+            borderRadius: 16,
+            padding: 12,
+            boxShadow: "0 8px 30px rgba(0,0,0,0.35)",
+          }}
+        >
+          <DroneMap path={path} height={560} followLatest initialCenter={START} />
+        </div>
       </div>
     </div>
   );
