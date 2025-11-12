@@ -2,34 +2,36 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 
 type LatLng = { lat: number; lng: number };
 
-// Dynamically import to avoid SSR issues with Leaflet
-const DroneMap = dynamic(() => import("@/components/DroneMap"), { ssr: false });
+// Use relative path based on your folder layout
+const DroneMap = dynamic(() => import("../../components/DroneMap"), { ssr: false });
+
+// ✅ fixed start coordinates
+const START: LatLng = { lat: 14.297567, lng: 101.166279 };
 
 export default function OffencePage() {
+  const router = useRouter();
   const [path, setPath] = useState<LatLng[]>([]);
   const [running, setRunning] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper to add a new point (use this with your real drone data)
+  // Call this with real drone fixes when you hook up your feed
   const pushPoint = useCallback((lat: number, lng: number) => {
     setPath(prev => [...prev, { lat, lng }]);
   }, []);
 
-  // A tiny simulator that "moves" roughly northeast in small steps
+  // Simple simulator so you can see the tracking line
   useEffect(() => {
     if (!running) return;
 
-    // Seed start location if empty (Bangkok-ish)
-    if (path.length === 0) {
-      setPath([{ lat: 13.7563, lng: 100.5018 }]);
-    }
+    if (path.length === 0) setPath([START]);
 
     timerRef.current = setInterval(() => {
       setPath(prev => {
-        const last = prev[prev.length - 1] ?? { lat: 13.7563, lng: 100.5018 };
+        const last = prev[prev.length - 1] ?? START;
         const stepLat = (Math.random() * 0.0009) + 0.0002;
         const stepLng = (Math.random() * 0.0009) + 0.0002;
         const next = { lat: last.lat + stepLat, lng: last.lng + stepLng };
@@ -58,6 +60,22 @@ export default function OffencePage() {
 
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
+      {/* Back button */}
+      <button
+        onClick={() => router.back()} // or router.push("/menu")
+        style={{
+          width: "fit-content",
+          padding: "8px 12px",
+          borderRadius: 10,
+          border: "1px solid #1f2937",
+          background: "#111827",
+          color: "white",
+          cursor: "pointer",
+        }}
+      >
+        ← Back
+      </button>
+
       <h1 style={{ fontSize: 24, fontWeight: 700 }}>Offence — Drone Map Tracking</h1>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -105,12 +123,12 @@ export default function OffencePage() {
         </button>
       </div>
 
-      <DroneMap path={path} height={520} followLatest />
+      {/* Map uses your start center by default; still passed explicitly */}
+      <DroneMap path={path} height={520} followLatest initialCenter={START} />
 
       <div style={{ fontSize: 14, color: "#6b7280" }}>
         <p>
-          <b>Tip:</b> When you have live drone coordinates, call <code>pushPoint(lat, lng)</code> (see code) each
-          time you receive a new fix. The polyline and last-position marker will update automatically.
+          When connected to your drone, call <code>pushPoint(lat, lng)</code> for each new GPS fix.
         </p>
       </div>
     </div>

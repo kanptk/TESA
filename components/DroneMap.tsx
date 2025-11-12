@@ -43,7 +43,8 @@ function PanToLatest({ path, followLatest = true }: { path: LatLng[]; followLate
 
 export default function DroneMap({
   path,
-  initialCenter = { lat: 13.7563, lng: 100.5018 }, // Bangkok as a default
+  // ✅ your requested default start center
+  initialCenter = { lat: 14.297567, lng: 101.166279 },
   height = 480,
   followLatest = true,
 }: DroneMapProps) {
@@ -64,7 +65,6 @@ export default function DroneMap({
         scrollWheelZoom
       >
         <TileLayer
-          // OpenStreetMap tiles
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
